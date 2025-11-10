@@ -1,4 +1,15 @@
 # NVIDIA PhysicsNeMo
+
+pip install streamlit
+
+D:\physicsnemo-1.2.0>python -m streamlit hello
+
+exemplo de uma ultra Som com IA e calculos
+
+<img width="1474" height="866" alt="image" src="https://github.com/user-attachments/assets/1eac2e94-75d3-4413-a6b5-6677db9f1f54" />
+
+
+
 <img width="1003" height="266" alt="image" src="https://github.com/user-attachments/assets/c9fa1e8a-9ebc-4cd1-98a0-e872d7e2290c" />
 
 pip show nvidia-physicsnemo
