@@ -1,5 +1,8 @@
 # NVIDIA PhysicsNeMo
 
+ root@debian:~/Nvidia-AI# nano requirements.txt
+(.venv) root@debian:~/Nvidia-AI# pip install -r requirements.txt
+
 Duvidas https://build.nvidia.com/
 
     python -m streamlit run streamlit_chat_app.py
