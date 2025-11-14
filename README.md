@@ -24,6 +24,9 @@ pip show nvidia-physicsnemo
 
 <img width="1021" height="196" alt="image" src="https://github.com/user-attachments/assets/6ece1e8f-b555-468d-b337-2566dd3435b2" />
 
+<img width="1483" height="828" alt="image" src="https://github.com/user-attachments/assets/f15f0fa9-c5ce-4e72-a491-60536fd74732" />
+
+
     from physicsnemo.models import Module
 
     def responder_pergunta(pergunta):
