@@ -6,6 +6,10 @@ Duvidas https://build.nvidia.com/
 
 <img width="1900" height="943" alt="image" src="https://github.com/user-attachments/assets/2e10dd05-da47-4241-8444-9e3c3d18161c" />
 
+<img width="1800" height="413" alt="image" src="https://github.com/user-attachments/assets/59d27f81-2e36-4ea6-841a-c6c3fa685ded" />
+
+python -m streamlit run world_peace_index.py
+
 
 pip install streamlit
 
