@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Gerador de Imagens</title>
+    <!-- Load Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827; /* Fundo cinza escuro */
+        }
+        .chat-container {
+            max-height: 70vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        /* Estilo Matrix Green para a interface */
+        .matrix-green-text { color: #00FF41; }
+        .matrix-green-border { border-color: #00FF41; }
+        .matrix-green-bg { background-color: #00FF41; }
+        .matrix-green-shadow { box-shadow: 0 4px 6px -1px rgba(0, 255, 65, 0.5), 0 2px 4px -2px rgba(0, 255, 65, 0.5); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div id="app" class="w-full max-w-xl bg-gray-900 rounded-xl shadow-2xl flex flex-col h-[90vh] border matrix-green-border">
+        
+        <!-- Header -->
+        <header class="p-4 bg-gray-800 rounded-t-xl shadow-md border-b matrix-green-border">
+            <h1 class="text-xl font-bold matrix-green-text">🖼️ Chat Gerador de Imagens (Imagen)</h1>
+            <p class="text-sm text-gray-400">Descreva o desenho que você quer e a IA irá criá-lo.</p>
+        </header>
+
+        <!-- Chat Display -->
+        <div id="chat-messages" class="chat-container flex-grow p-4 space-y-4">
+            <!-- Initial Bot Message -->
+            <div class="flex justify-start">
+                <div class="bg-gray-700 p-3 rounded-xl max-w-xs md:max-w-md shadow-lg border matrix-green-border matrix-green-text">
+                    Olá! Sou o Gerador de Imagens. **Descreva o seu desenho** de forma detalhada para começar.
+                </div>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 border-t matrix-green-border">
+            <form id="chat-form" class="flex space-x-3">
+                <input type="text" id="user-input" placeholder="Ex: Um gato usando óculos de sol na praia" 
+                       class="flex-grow p-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#00FF41] bg-gray-800 text-white matrix-green-border transition duration-150" required>
+                <button type="submit" id="send-button"
+                        class="matrix-green-bg text-black p-3 rounded-xl font-semibold matrix-green-shadow hover:bg-[#00E03A] transition duration-150 flex items-center justify-center disabled:bg-gray-500 disabled:text-gray-200">
+                    <span id="button-text">Gerar Imagem</span>
+                    <svg id="spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-black hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </button>
+            </form>
+            <p id="error-message" class="text-red-500 text-sm mt-2 hidden">Ocorreu um erro na geração. Tente novamente.</p>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL_BASE = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict';
+        const apiKey = ""; // A chave será fornecida pelo ambiente
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const buttonText = document.getElementById('button-text');
+        const spinner = document.getElementById('spinner');
+        const errorMessage = document.getElementById('error-message');
+
+        // --- Utility Functions ---
+
+        /**
+         * Adiciona uma mensagem de texto ou uma imagem ao chat.
+         * @param {string} content O conteúdo (texto ou URL da imagem).
+         * @param {string} type 'user' ou 'text' (para resposta da IA) ou 'image' (para imagem gerada).
+         */
+        function addMessageToUI(content, type) {
+            const isUser = type === 'user';
+            const isImage = type === 'image';
+            const alignment = isUser ? 'justify-end' : 'justify-start';
+            const bgColor = isUser ? 'bg-indigo-600' : 'bg-gray-700';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${alignment}`;
+            
+            let htmlContent = '';
+
+            if (isImage) {
+                // Para Imagens: Exibe a imagem gerada
+                htmlContent = `
+                    <div class="bg-gray-800 p-2 rounded-xl max-w-full shadow-2xl matrix-green-border border">
+                        <p class="text-xs matrix-green-text mb-1">Resultado:</p>
+                        <img src="${content}" alt="Imagem gerada pela IA" class="rounded-lg w-full h-auto max-h-96 object-contain" />
+                    </div>
+                `;
+            } else {
+                // Para Texto (prompt do usuário ou mensagem de status da IA)
+                htmlContent = `
+                    <div class="${bgColor} text-white p-3 rounded-xl max-w-xs md:max-w-md shadow-lg ${isUser ? 'bg-gray-800' : 'matrix-green-text matrix-green-border border'}">
+                        ${content}
+                    </div>
+                `;
+            }
+
+            messageDiv.innerHTML = htmlContent;
+            chatMessages.appendChild(messageDiv);
+            
+            // Rola para a última mensagem
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        /**
+         * Realiza uma requisição fetch com backoff exponencial.
+         */
+        async function exponentialBackoffFetch(url, options, maxRetries = 5) {
+            for (let i = 0; i < maxRetries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) {
+                        return response;
+                    } else if (response.status === 429 || response.status >= 500) {
+                        const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                        console.warn(\`Tentativa ${i + 1} falhou. Tentando novamente em \${delay / 1000}s...\`);
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        continue;
+                    } else {
+                        throw new Error(\`Falha na chamada da API com status \${response.status}: \${await response.text()}\`);
+                    }
+                } catch (error) {
+                    if (i === maxRetries - 1) {
+                        throw error;
+                    }
+                    console.error("Fetch falhou:", error);
+                    const delay = Math.pow(2, i) * 1000 + Math.random() * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+            throw new Error("Chamada à API falhou após o máximo de tentativas.");
+        }
+
+
+        // --- Main Logic ---
+
+        async function handleImageGeneration(event) {
+            event.preventDefault();
+
+            const userPrompt = userInput.value.trim();
+            if (!userPrompt) return;
+
+            // 1. Exibe o prompt do usuário
+            addMessageToUI(userPrompt, 'user');
+            userInput.value = '';
+
+            // 2. Exibe o status de carregamento
+            sendButton.disabled = true;
+            buttonText.classList.add('hidden');
+            spinner.classList.remove('hidden');
+            errorMessage.classList.add('hidden');
+
+            // 3. Adiciona mensagem de "processando"
+            addMessageToUI("Processando o seu pedido... (Isto pode levar alguns segundos)", 'text');
+            
+            try {
+                const apiUrl = `${API_URL_BASE}?key=${apiKey}`;
+                
+                const payload = {
+                    instances: [{ prompt: userPrompt }],
+                    parameters: { 
+                        "sampleCount": 1
+                    },
+                };
+
+                const response = await exponentialBackoffFetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                
+                let imageUrl = null;
+
+                if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                    const base64Data = result.predictions[0].bytesBase64Encoded;
+                    // Cria o URL de dados para a imagem PNG
+                    imageUrl = `data:image/png;base64,${base64Data}`;
+                } else {
+                    throw new Error("Resposta da API inválida ou sem imagem.");
+                }
+
+                // 4. Exibe a imagem gerada
+                addMessageToUI(imageUrl, 'image');
+
+            } catch (error) {
+                console.error("Erro na Geração de Imagem:", error);
+                errorMessage.textContent = 'Falha na conexão ou na geração da imagem. Tente novamente.';
+                errorMessage.classList.remove('hidden');
+            } finally {
+                // 5. Reseta o estado
+                sendButton.disabled = false;
+                buttonText.classList.remove('hidden');
+                spinner.classList.add('hidden');
+            }
+        }
+
+        // --- Event Listener ---
+        chatForm.addEventListener('submit', handleImageGeneration);
+    </script>
+</body>
+</html>
