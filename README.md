@@ -4,7 +4,7 @@ Duvidas https://build.nvidia.com/
 
     python -m streamlit run streamlit_chat_app.py
 
-    <img width="1900" height="943" alt="image" src="https://github.com/user-attachments/assets/2e10dd05-da47-4241-8444-9e3c3d18161c" />
+<img width="1900" height="943" alt="image" src="https://github.com/user-attachments/assets/2e10dd05-da47-4241-8444-9e3c3d18161c" />
 
 
 pip install streamlit
